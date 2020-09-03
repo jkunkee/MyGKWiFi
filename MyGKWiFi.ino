@@ -38,8 +38,6 @@
 // RUN / PGM           15               // pulled low on carrier board
 // WAKE                16               // wired to RESET through cap to wake from sleep
 
-WiFiClient client;                      // Use WiFiClient class to create TCP connections
-
 //SSD1306 display(0x3c, SDA_PIN, SCL_PIN); // OLED address (0x3c), SDA (GPIO0), SCL(GPIO2)
 class LinedDisplay {
 
