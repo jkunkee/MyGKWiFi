@@ -199,7 +199,6 @@ void setup() {
   // initialize and setup dispaly . . .
   display.begin();
   // fixed in other situations, but not this one
-  Wire.setClock(100000); // BMS requires 100kHz
   display.splash();
   display.configureLine(2, ArialMT_Plain_10, TEXT_ALIGN_CENTER);
 #ifdef MYGKWIFI_DEBUG
