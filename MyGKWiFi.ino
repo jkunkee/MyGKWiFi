@@ -56,7 +56,7 @@ private:
     void setFont(const uint8_t *newFont) {
       if (newFont != NULL) {
         font = newFont;
-        font_height = font[HEIGHT_POS];
+        font_height = font[HEIGHT_POS]; // Arial 10pt==13px, 16pt==19px, 24pt==28px
       }
     }
   };
@@ -64,14 +64,15 @@ private:
   SSD1306 screen;
   const int16_t screen_rows = 64;
   const int16_t screen_columns = 128;
-  const int font_rows = 16;
   Line *lines;
 
 public:
-  const int lineCount = screen_rows / font_rows;
+  enum LineNumber { BANNER_LINE = 0, PHASE_LINE, MESSAGE_LINE, LINE_COUNT };
 
   LinedDisplay() : screen(0x3c, SDA_PIN, SCL_PIN, GEOMETRY_128_64, I2C_ONE, 100000) {
-    lines = new Line[lineCount];
+    lines = new Line[LINE_COUNT];
+    // BANNER and PHASE are Arial 16, the Line default
+    lines[MESSAGE_LINE].setFont(ArialMT_Plain_10);
   }
 
   ~LinedDisplay() {
@@ -86,21 +87,13 @@ public:
   }
 
   void splash() {
-    lines[0].text = "GK-WiFi vMine";
-    lines[1].text = "Built: " __TIME__;
-    lines[2].text = "Waiting ...";
+    lines[BANNER_LINE].text = "GK-WiFi vMine";
+    lines[PHASE_LINE].text = "Built: " __TIME__;
+    lines[MESSAGE_LINE].text = "Booting ...";
   }
 
-  void configureLine(int lineIdx, const uint8_t *font, OLEDDISPLAY_TEXT_ALIGNMENT alignment) {
-    if (lineIdx < 0 || lineCount <= lineIdx) {
-      return;
-    }
-    lines[lineIdx].setFont(font);
-    lines[lineIdx].alignment = alignment;
-  }
-
-  void writeLine(int lineIdx, String& s) {
-    if (lineIdx < 0 || lineCount <= lineIdx) {
+  void writeLine(LineNumber lineIdx, String& s) {
+    if (lineIdx < 0 || LINE_COUNT <= lineIdx) {
       return;
     }
 
@@ -112,17 +105,17 @@ public:
   void paint() {
     screen.clear();
     int targetRow = 0;
-    for (int lineIdx = 0; lineIdx < lineCount; lineIdx++) {
+    for (int lineIdx = 0; lineIdx < LINE_COUNT; lineIdx++) {
       Line *line = &lines[lineIdx];
       screen.setFont(line->font);
       screen.setTextAlignment(line->alignment);
+      // TODO: handle different alignments
       screen.drawString(64, targetRow, line->text.c_str());
       targetRow += line->font_height;
     }
     screen.display();
   }
 
-#ifdef MYGKWIFI_DEBUG
   void testPattern() {
     screen.setColor(WHITE);
     screen.clear();
@@ -135,7 +128,6 @@ public:
     }
     screen.display();
   }
-#endif // MYGKWIFI_DEBUG
 };
 LinedDisplay display;
 
@@ -200,7 +192,6 @@ void setup() {
   display.begin();
   // fixed in other situations, but not this one
   display.splash();
-  display.configureLine(2, ArialMT_Plain_10, TEXT_ALIGN_CENTER);
 #ifdef MYGKWIFI_DEBUG
   display.testPattern();
 #endif // MYGKWIFI_DEBUG
@@ -275,16 +266,16 @@ void loop() {
   // write state to display
   if (dataPointValid) {
     String dataPointString = dataPoint.toString();
-    display.writeLine(1, dataPointString);
+    display.writeLine(LinedDisplay::PHASE_LINE, dataPointString);
   } else {
     String failureString("Invalid datum");
-    display.writeLine(1, failureString);
+    display.writeLine(LinedDisplay::PHASE_LINE, failureString);
     return;
   }
 
   // Start/connect WiFi
   String wifiString("WiFi starting...");
-  display.writeLine(2, wifiString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -295,20 +286,20 @@ void loop() {
     wifiString = "WiFi wait count: ";
     waitIdx += 1;
     wifiString += String(waitIdx/2);
-    display.writeLine(2, wifiString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
     delay(WIFI_WAIT_PERIOD);
   }
   if (WiFi.status() != WL_CONNECTED) {
     wifiString = "WiFi conn. failed: ";
     wifiString += WiFi.status();
-    display.writeLine(2, wifiString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
     Log(wifiString);
     WiFi.mode(WIFI_OFF);
     return;
   }
   wifiString = "WiFi connected.";
   digitalWrite(GRN_LED, HIGH);
-  display.writeLine(2, wifiString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
 
   String hubStatusString;
   
@@ -316,7 +307,7 @@ void loop() {
   // probably because of the hub or SSL/TLS.
   // This is copy-pasted from sample_init.cpp in the Azure SDK and tweaked a little.
   hubStatusString = "Syncing Time";
-  display.writeLine(2, hubStatusString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
   {
    time_t epochTime;
 
@@ -339,7 +330,7 @@ void loop() {
 
   // Construct message, connect to IoT Hub, send message
   hubStatusString = "AIoTH: creating client";
-  display.writeLine(2, hubStatusString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
   const IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol = HTTP_Protocol; // HTTP_Protocol, MQTT_Protocol
@@ -347,7 +338,7 @@ void loop() {
 
   if (device_ll_handle == NULL) {
     hubStatusString = "AIoTH: create failed";
-    display.writeLine(2, hubStatusString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
     WiFi.mode(WIFI_OFF);
     digitalWrite(GRN_LED, LOW);
     return;
@@ -377,7 +368,7 @@ void loop() {
   //}
   //if (connectionStatusBlock.complete && connectionStatusBlock.status != IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
   //  hubStatusString = "AIoTH: connect failed";
-  //  display.writeLine(2, hubStatusString);
+  //  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
   //  LogLn(hubStatusString);
   //  Log("  ");
   //  LogLn(IOTHUB_CLIENT_CONNECTION_STATUSStrings(connectionStatusBlock.status));
@@ -390,13 +381,13 @@ void loop() {
   //connectionStatusBlock.complete = false;
 
   hubStatusString = "AIoTH: creating message";
-  display.writeLine(2, hubStatusString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   String hubMessage = dataPoint.toString();
   IOTHUB_MESSAGE_HANDLE message_handle = IoTHubMessage_CreateFromString(hubMessage.c_str());
   if (message_handle == NULL) {
     hubStatusString = "AIoTH: create failed";
-    display.writeLine(2, hubStatusString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
     IoTHubDeviceClient_LL_Destroy(device_ll_handle);
     WiFi.mode(WIFI_OFF);
     digitalWrite(GRN_LED, LOW);
@@ -404,7 +395,7 @@ void loop() {
   }
 
   hubStatusString = "AIoTH: sending message";
-  display.writeLine(2, hubStatusString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   iothub_callback_status_block sb;
   sb.complete = false;
@@ -413,7 +404,7 @@ void loop() {
   if (result != IOTHUB_CLIENT_OK) {
     hubStatusString = "AIoTH: send failed";
     hubStatusString += String(result, HEX);
-    display.writeLine(2, hubStatusString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
     IoTHubDeviceClient_LL_Destroy(device_ll_handle);
     WiFi.mode(WIFI_OFF);
     digitalWrite(GRN_LED, LOW);
@@ -430,7 +421,7 @@ void loop() {
     msgWaitIdx += 1;
     hubStatusString = "Msg wait: ";
     hubStatusString += msgWaitIdx;
-    display.writeLine(2, hubStatusString);
+    display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
     delay(MSG_WAIT_DELAY);
   }
   Log("Got callback, ");
@@ -441,7 +432,7 @@ void loop() {
   } else {
     hubStatusString = "AIoTH: send failed";
   }
-  display.writeLine(2, hubStatusString);
+  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   // Cleanup
   IoTHubDeviceClient_LL_Destroy(device_ll_handle);
