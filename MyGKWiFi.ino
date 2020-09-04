@@ -88,8 +88,8 @@ public:
 
   void splash() {
     lines[BANNER_LINE].text = "GK-WiFi vMine";
-    lines[PHASE_LINE].text = "Built: " __TIME__;
-    lines[MESSAGE_LINE].text = "Booting ...";
+    lines[PHASE_LINE].text = "Booting ...";
+    lines[MESSAGE_LINE].text = "Built: " __TIME__;
   }
 
   void writeLine(LineNumber lineIdx, String& s) {
