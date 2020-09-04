@@ -73,6 +73,7 @@ public:
     lines = new Line[LINE_COUNT];
     // BANNER and PHASE are Arial 16, the Line default
     lines[MESSAGE_LINE].setFont(ArialMT_Plain_10);
+    // 19+19+13=51 leaves 64-51=13, enough for another line if wanted
   }
 
   ~LinedDisplay() {
