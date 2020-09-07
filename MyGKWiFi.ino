@@ -32,9 +32,9 @@
 // RX                  3                // wired to serial comm
 #define PI_GPIO_14     4                // line to BMS for notifying that shutdown is complete
 // not used            5                // reserved
-#define YEL_LED        12               // steady = empty buffer (no GK connection yet)
-#define RED_LED        13               // connecting to network - off when connected.
-#define GRN_LED        14               // flashes with each send
+#define YEL_LED        12               // off = empty buffer (no GK connection yet)
+#define RED_LED        13               // on = setup() running
+#define GRN_LED        14               // WiFi connection established
 // RUN / PGM           15               // pulled low on carrier board
 // WAKE                16               // wired to RESET through cap to wake from sleep
 
