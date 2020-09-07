@@ -315,8 +315,9 @@ void loop() {
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
 
   // Example sdk status tracing for troubleshooting
-  bool traceOn = true;
-  IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
+  // This is MQTT-only per https://docs.microsoft.com/en-us/azure/iot-hub/iot-c-sdk-ref/iothub-device-client-ll-h/iothubdeviceclient-ll-setoption
+  //bool traceOn = true;
+  //IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
 
   // Setting connection status callback to get indication of connection to iothub
   // Without multithreading and an easy-to-write state machine, monitoring the connection
