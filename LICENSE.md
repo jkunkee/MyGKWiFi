@@ -1,0 +1,1 @@
+Only the author, Jon Kunkee, is licensed to use this software. That's why this is a private repository. See README.md for plans on changing this.
