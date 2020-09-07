@@ -5,13 +5,14 @@
 #include "Credentials.h"
 #include "BMS.h"
 #include "Log.h"
+#include <SoftwareSerial.h>
 
 #include <AzureIoTHub.h>
 #include "AzureIoTProtocol_HTTP.h"
 #include "iothubtransporthttp.h"
 
 // sample_init bits from Azure SDK
-// Times before 2010 (1970 + 40 years) are invalid
+// Times before ~2010 (1970 + 40 years) are invalid
 #include <time.h>
 #define MIN_EPOCH (40 * 365 * 24 * 3600)
 
@@ -31,7 +32,7 @@
 #define SCL_PIN        2                // I2C SCL pin (pulled up)
 // RX                  3                // wired to serial comm
 #define PI_GPIO_14     4                // line to BMS for notifying that shutdown is complete
-// not used            5                // reserved
+#define FAUX_GPS_PIN   5                // NMEA time sentences are sent on this pin
 #define YEL_LED        12               // off = empty buffer (no GK connection yet)
 #define RED_LED        13               // on = setup() running
 #define GRN_LED        14               // WiFi connection established
@@ -171,6 +172,11 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void
 //  sb->complete = true;
 //}
 
+// Time globals
+// Pacific Standard Time (Seattle)
+const char *tzValue = "PST+8PDT,M3.2.0/2,M11.1.0/2";
+SoftwareSerial GpsSerial;
+
 void setup() {
   // GK-WiFi_v2_0 setup
 
@@ -199,6 +205,11 @@ void setup() {
 
   WiFi.mode(WIFI_OFF);
   IoTHub_Init();
+
+  // Set up time
+  setenv("TZ", tzValue, 1);
+  tzset();
+  GpsSerial.begin(9600, SWSERIAL_8N1, -1, FAUX_GPS_PIN);
 
   bms_notify_boot_complete();
 
@@ -328,6 +339,37 @@ void loop() {
        }
    }
   }
+  // Since I don't have $4000 to spend on a copy of the spec, I'll just go with outdated,
+  // potentially incorrect, entirely not-spec-based info from
+  // https://www.gpsinformation.org/dale/nmea.htm
+  time_t now = time(NULL);
+  struct tm utcNow;
+  struct tm localNow;
+  localtime_r(&now, &localNow);
+  gmtime_r(&now, &utcNow);
+
+  String nmeaSentence;
+  nmeaSentence += "$GPZDA,";
+  char timeBuf[83]; // NMEA max is 82 chars incl. start and checksum markers
+  timeBuf[83-1] = '\0x00'; // paranoid enforced null termination
+  strftime(timeBuf, 82, "%H:%M:%S,%d,%m,%Y,", &utcNow);
+  nmeaSentence += timeBuf;
+  int8_t timezoneHourOffset = -8;
+  int8_t timezoneMinuteOffset = 0;
+  if (localNow.tm_isdst != 0) {
+    timezoneHourOffset += 1;
+  }
+  nmeaSentence += timezoneHourOffset;
+  nmeaSentence += ",";
+  nmeaSentence += timezoneMinuteOffset;
+  uint8_t checksum = 0;
+  for (int idx = 1; idx < nmeaSentence.length(); idx++) {
+    checksum ^= nmeaSentence[idx];
+  }
+  nmeaSentence += "*";
+  nmeaSentence += String(checksum, HEX);
+  nmeaSentence += "\r\n";
+  GpsSerial.write(nmeaSentence.c_str());
 
   // Construct message, connect to IoT Hub, send message
   hubStatusString = "AIoTH: creating client";
