@@ -1,11 +1,17 @@
 
 //#define MYGKWIFI_DEBUG
 
+// Unless and until there are some major RAM savings somewhere, this is being cut.
+// I get x509 init OOM errors and crashes on second samples if local var dynamic memory is below about 45700 bytes.
+//#define SEND_TIME_VIA_FAUX_GPS
+
 #include "gkplus_datapoint.h"
 #include "Credentials.h"
 #include "BMS.h"
 #include "Log.h"
+#ifdef SEND_TIME_VIA_FAUX_GPS
 #include <SoftwareSerial.h>
+#endif // SEND_TIME_VIA_FAUX_GPS
 #include "LinedDisplay.h"
 
 #include <AzureIoTHub.h>
@@ -80,8 +86,10 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void
 
 // Time globals
 // Pacific Standard Time (Seattle)
+#ifdef SEND_TIME_VIA_FAUX_GPS
 const char *tzValue = "PST+8PDT,M3.2.0/2,M11.1.0/2";
 SoftwareSerial GpsSerial;
+#endif // SEND_TIME_VIA_FAUX_GPS
 
 void setup() {
   // GK-WiFi_v2_0 setup
@@ -112,10 +120,12 @@ void setup() {
   WiFi.mode(WIFI_OFF);
   IoTHub_Init();
 
+#ifdef SEND_TIME_VIA_FAUX_GPS
   // Set up time
   setenv("TZ", tzValue, 1);
   tzset();
   GpsSerial.begin(9600, SWSERIAL_8N1, -1, FAUX_GPS_PIN);
+#endif // SEND_TIME_VIA_FAUX_GPS
 
   bms_notify_boot_complete();
 
@@ -248,6 +258,7 @@ void loop() {
        }
    }
   }
+#ifdef SEND_TIME_VIA_FAUX_GPS
   // Since I don't have $4000 to spend on a copy of the spec, I'll just go with outdated,
   // potentially incorrect, entirely not-spec-based info from
   // https://www.gpsinformation.org/dale/nmea.htm
@@ -278,7 +289,9 @@ void loop() {
   nmeaSentence += "*";
   nmeaSentence += String(checksum, HEX);
   nmeaSentence += "\r\n";
-  GpsSerial.write(nmeaSentence.c_str());
+  Serial.print(nmeaSentence);
+  GpsSerial.print(nmeaSentence);
+#endif // SEND_TIME_VIA_FAUX_GPS
 
   // Construct message, connect to IoT Hub, send message
   hubStatusString = "AIoTH: creating client";
