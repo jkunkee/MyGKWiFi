@@ -70,7 +70,7 @@ private:
 public:
   enum LineNumber { BANNER_LINE = 0, PHASE_LINE, MESSAGE_LINE, LINE_COUNT };
 
-  LinedDisplay() : screen(0x3c, SDA_PIN, SCL_PIN, GEOMETRY_128_64, I2C_ONE, 100000) {
+  LinedDisplay(int sdaPin, int sclPin) : screen(0x3c, sdaPin, sclPin, GEOMETRY_128_64, I2C_ONE, 100000) {
     lines = new Line[LINE_COUNT];
     // BANNER and PHASE are Arial 16, the Line default
     lines[MESSAGE_LINE].setFont(ArialMT_Plain_10);
@@ -132,7 +132,7 @@ public:
     screen.display();
   }
 };
-LinedDisplay display;
+LinedDisplay display(SDA_PIN, SCL_PIN);
 
 /* -- send_confirm_callback --
  * Callback method which executes upon confirmation that a message originating from this device has been received by the IoT Hub in the cloud.
