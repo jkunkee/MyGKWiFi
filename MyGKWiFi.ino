@@ -79,7 +79,7 @@ public:
 
   ~LinedDisplay() {
     screen.end();
-    delete(lines);
+    delete[](lines);
   }
 
   void begin() {
