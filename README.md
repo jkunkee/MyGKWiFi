@@ -28,3 +28,4 @@ Board configuration
 "Tools" menu in Arduino IDE
 Board: "Generic ESP8266 Module"
 Flash: GK-WiFi build instructions say "4M (1M SPIFFS)" and I think that's equivalent to "4MB (FS:1MB OTA:~1019KB)"
+Upload speed: my equipment seems to tolerate 256000 baud
