@@ -37,8 +37,12 @@ public:
     Wire.write(addr);
     int txResult = Wire.endTransmission(false);
     if (txResult != 0) {
-      Log("Read setup failed: ");
-      LogLn(String(txResult));
+      if (txResult == 2) {
+        LogLnVerbose("Read setup failed due to NACK on ADDR. Device probably not present.");
+      } else {
+        Log("Read setup failed: ");
+        LogLn(String(txResult));
+      }
       return false;
     }
     byte count = Wire.requestFrom(bms_i2c_addr_7b, len);
@@ -59,10 +63,10 @@ public:
       *out += ((unsigned int)(Wire.read()) << shiftBits);
       shiftBits += 8;
     }
-    Log("Read at ");
-    Log(addr);
-    Log(" got ");
-    LogLn(*out);
+    LogVerbose("Read at ");
+    LogVerbose(addr);
+    LogVerbose(" got ");
+    LogLnVerbose(*out);
     return true;
   }
 
