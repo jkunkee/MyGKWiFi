@@ -91,7 +91,8 @@ public:
   void splash() {
     lines[BANNER_LINE].text = "GK-WiFi vMine";
     lines[PHASE_LINE].text = "Booting ...";
-    lines[MESSAGE_LINE].text = "Built: " __TIME__;
+    lines[MESSAGE_LINE].text = "Built: " __TIME__ " " __DATE__;
+    paint();
   }
 
   void writeLine(LineNumber lineIdx, String& s) {
@@ -242,7 +243,7 @@ void loop() {
       serialBuffer = "";
       Log("Got line: '");
       Log(serialLine);
-      LogLn("'\n");
+      LogLn("'");
       break;
     } else {
       serialBuffer += inChar;
@@ -266,7 +267,7 @@ void loop() {
   // If for some reason we get empty lines, ignore them.
   // One case is \r\n being parsed as two line endings.
   if (serialLine.length() == 0) {
-    LogLn("Failed zero-length check");
+    LogLn("Got empty line from serial");
     return;
   }
 
@@ -287,6 +288,7 @@ void loop() {
 
   // Start/connect WiFi
   String wifiString("WiFi starting...");
+  LogLn(wifiString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
 
   WiFi.mode(WIFI_STA);
@@ -310,6 +312,7 @@ void loop() {
     return;
   }
   wifiString = "WiFi connected.";
+  LogLn(wifiString);
   digitalWrite(GRN_LED, HIGH);
   display.writeLine(LinedDisplay::MESSAGE_LINE, wifiString);
 
@@ -319,6 +322,7 @@ void loop() {
   // probably because of the hub or SSL/TLS.
   // This is copy-pasted from sample_init.cpp in the Azure SDK and tweaked a little.
   hubStatusString = "Syncing Time";
+  LogLn(hubStatusString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
   {
    time_t epochTime;
@@ -373,6 +377,7 @@ void loop() {
 
   // Construct message, connect to IoT Hub, send message
   hubStatusString = "AIoTH: creating client";
+  LogLn(hubStatusString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
@@ -387,6 +392,7 @@ void loop() {
     return;
   }
 
+  LogLn("Starting IoT Hub transaction");
   // Setting the Trusted Certificate.
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
 
@@ -424,6 +430,7 @@ void loop() {
   //connectionStatusBlock.complete = false;
 
   hubStatusString = "AIoTH: creating message";
+  LogLn(hubStatusString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   String hubMessage = dataPoint.toString();
@@ -438,6 +445,7 @@ void loop() {
   }
 
   hubStatusString = "AIoTH: sending message";
+  LogLn(hubStatusString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   iothub_callback_status_block sb;
@@ -467,7 +475,7 @@ void loop() {
     display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
     delay(MSG_WAIT_DELAY);
   }
-  Log("Got callback, ");
+  Log("Got IoT Hub callback, ");
   LogLn(IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(sb.result));
 
   if (sb.result == 0) {
@@ -475,10 +483,12 @@ void loop() {
   } else {
     hubStatusString = "AIoTH: send failed";
   }
+  LogLn(hubStatusString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
 
   // Cleanup
   IoTHubDeviceClient_LL_Destroy(device_ll_handle);
   WiFi.mode(WIFI_OFF);
+  LogLn("End of complete loop()");
   digitalWrite(GRN_LED, LOW);
 }
