@@ -33,13 +33,14 @@ private:
   Line *lines;
 
 public:
-  enum LineNumber { BANNER_LINE = 0, PHASE_LINE, MESSAGE_LINE, LINE_COUNT };
+  enum LineNumber { BANNER_LINE = 0, PHASE_LINE, MESSAGE_LINE, DATA_LINE, LINE_COUNT };
 
   LinedDisplay(int sdaPin, int sclPin) : screen(0x3c, sdaPin, sclPin, GEOMETRY_128_64, I2C_ONE, 100000) {
     lines = new Line[LINE_COUNT];
     // BANNER and PHASE are Arial 16, the Line default
     lines[MESSAGE_LINE].setFont(ArialMT_Plain_10);
-    // 19+19+13=51 leaves 64-51=13, enough for another line if wanted
+    lines[DATA_LINE].setFont(ArialMT_Plain_10);
+    // 19+19+13+13=64 leaves 64-64=0 rows remaining
   }
 
   ~LinedDisplay() {
@@ -56,7 +57,7 @@ public:
   void splash() {
     lines[BANNER_LINE].text = "GK-WiFi vMine";
     lines[PHASE_LINE].text = "Freshly booted!";
-    lines[MESSAGE_LINE].text = "Built: " __TIME__ " " __DATE__;
+    lines[DATA_LINE].text = "Built: " __TIME__ " " __DATE__;
     paint();
   }
 
