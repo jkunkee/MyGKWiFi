@@ -67,21 +67,21 @@ public:
   }
 
   String toString() {
-    String result("");
-    result += "CPM:";
+    String result(F(""));
+    result += F("CPM:");
     result += String(cpm);
-    result += ", Vcc:";
+    result += F(", Vcc:");
     result += String(vcc);
     return result;
   }
 
 #ifdef MYGKWIFI_DEBUG
-  static getFakeLine() {
+  static String getFakeLine() {
     static boolean firstInput = true;
-    String input("");
-    String firstLine("Date,Time,CPM,uSv/h,Vcc\n");
+    String input(F(""));
+    String firstLine(F("Date,Time,CPM,uSv/h,Vcc\n"));
     // "2020-08-11","15:25:15",0,0.0000,2.714
-    String dataLine("\"2020-08-11\",\"15:25:15\",0,0.0000,3.14159\n");
+    String dataLine(F("\"2020-08-11\",\"15:25:15\",0,0.0000,3.14159\n"));
   
     if (firstInput) {
       firstInput = false;

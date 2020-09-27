@@ -30,7 +30,7 @@ public:
 
   boolean read(int *out) {
     if (out == NULL) {
-      LogLn("Can't write data to NULL");
+      LogLn(F("Can't write data to NULL"));
       return false;
     }
     Wire.beginTransmission(bms_i2c_addr_7b);
@@ -40,21 +40,21 @@ public:
       if (txResult == 2) {
         LogLnVerbose("Read setup failed due to NACK on ADDR. Device probably not present.");
       } else {
-        Log("Read setup failed: ");
+        Log(F("Read setup failed: "));
         LogLn(String(txResult));
       }
       return false;
     }
     byte count = Wire.requestFrom(bms_i2c_addr_7b, len);
     if (count < len) {
-      Log("Read returned too few bytes: ");
+      Log(F("Read returned too few bytes: "));
       Log(count);
-      Log("/");
+      Log(F("/"));
       LogLn(len);
       return false;
     }
     if (count > sizeof(*out)) {
-      LogLn("Value read will not fit output datatype");
+      LogLn(F("Value read will not fit output datatype"));
       return false;
     }
     int shiftBits = 0;
@@ -63,9 +63,9 @@ public:
       *out += ((unsigned int)(Wire.read()) << shiftBits);
       shiftBits += 8;
     }
-    LogVerbose("Read at ");
+    LogVerbose(F("Read at "));
     LogVerbose(addr);
-    LogVerbose(" got ");
+    LogVerbose(F(" got "));
     LogLnVerbose(*out);
     return true;
   }
@@ -85,11 +85,11 @@ public:
       return true;
     } else {
 #ifdef DEBUG_LOGGING_VERBOSE
-      Log("BMS: Setting register ");
+      Log(F("BMS: Setting register "));
       Log(String(addr, HEX));
-      Log(" to ");
+      Log(F(" to "));
       Log(String(val, HEX));
-      Log(" failed with ");
+      Log(F(" failed with "));
       LogLn(txResult);
 #endif // DEBUG_LOGGING_VERBOSE
       return false;
@@ -180,9 +180,9 @@ static boolean bms_reconfigure() {
 static boolean dump_reg(reg& r) {
   int val = 0;
   boolean retVal = r.read(&val);
-  Log("Reg ");
+  Log(F("Reg "));
   Log(String(r.addr, HEX));
-  Log(": ");
+  Log(F(": "));
   LogLn(String(val, HEX));
   return retVal;
 }
@@ -228,17 +228,17 @@ void bms_init(int PiGpio14Pin) {
   bms_is_wired = success;
   if (!success) {
     // Normal case: BMS not wired, read fails, move on
-    LogLn("BMS not connected, not verifying configuration");
+    LogLn(F("BMS not connected, not verifying configuration"));
     return;
   }
   success = bms_reconfigure();
   if (!success) {
-    LogLn("BMS did not accept reconfiguration");
+    LogLn(F("BMS did not accept reconfiguration"));
     return;
   }
   success = bms_dump_config();
   if (!success) {
-    LogLn("BMS failed to dump configuration");
+    LogLn(F("BMS failed to dump configuration"));
     return;
   }
 }

@@ -55,8 +55,8 @@ public:
   }
 
   void splash() {
-    lines[BANNER_LINE].text = "GK-WiFi vMine";
-    lines[PHASE_LINE].text = "Freshly booted!";
+    lines[BANNER_LINE].text = F("GK-WiFi vMine");
+    lines[PHASE_LINE].text = F("Freshly booted!");
     lines[DATA_LINE].text = "Built: " __TIME__ " " __DATE__;
     paint();
   }

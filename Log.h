@@ -9,11 +9,11 @@
 #if defined(DEBUG_LOGGING)
 
 #define Log(x) Serial.print(x)
-#define LogFile(x) { Log(__FILE__); Log(": "); Log(x); }
-#define LogFileFunc(x) { Log(__FILE__); Log(" "); Log(__func__); Log(": "); LogFile(x); }
+#define LogFile(x) { Log(__FILE__); Log(F(": ")); Log(x); }
+#define LogFileFunc(x) { Log(__FILE__); Log(F(" ")); Log(__func__); Log(F(": ")); LogFile(x); }
 #define LogLn(x) Serial.println(x)
-#define LogLnFile(x) { LogFile(x); LogLn(""); }
-#define LogLnFileFunc(x) { LogFileFunc(x); LogLn(""); }
+#define LogLnFile(x) { LogFile(x); LogLn(F("")); }
+#define LogLnFileFunc(x) { LogFileFunc(x); LogLn(F("")); }
 
 #if defined(DEBUG_LOGGING_VERBOSE)
 

@@ -145,7 +145,7 @@ void loop() {
   //
 
   if (shutdownInitiated) {
-    dataString = "Waiting for BMS to cut power";
+    dataString = F("Waiting for BMS to cut power");
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
     delay(10000);
     return;
@@ -158,12 +158,12 @@ void loop() {
     // Check for power shutoff notification
     if (bms_is_shutdown_requested()) {
       shutdownInitiated = true;
-      phaseString = "Shutting down";
+      phaseString = F("Shutting down");
       display.writeLine(LinedDisplay::PHASE_LINE, phaseString);
       // TODO: say if low battery or button press
-      messageString = "Shutdown requested by BMS";
+      messageString = F("Shutdown requested by BMS");
       display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-      dataString = "";
+      dataString = F("");
       display.writeLine(LinedDisplay::DATA_LINE, dataString);
       bms_notify_shutdown_complete();
       return;
@@ -189,9 +189,9 @@ void loop() {
       serialBuffer += inChar;
     }
     // reset screen state
-    phaseString = "Serial Rx";
+    phaseString = F("Serial Rx");
     display.writeLine(LinedDisplay::PHASE_LINE, phaseString);
-    messageString = "Waiting...";
+    messageString = F("Waiting...");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
     display.writeLine(LinedDisplay::DATA_LINE, serialBuffer);
   }
@@ -203,7 +203,7 @@ void loop() {
 #ifdef MYGKWIFI_DEBUG
     delay(1000);
     digitalWrite(YEL_LED, LOW);
-    serialLine = gkplus_datapoint.getFakeLine();
+    serialLine = gkplus_datapoint::getFakeLine();
 #else // MYGKWIFI_DEBUG
     return;
 #endif // MYGKWIFI_DEBUG
@@ -213,7 +213,7 @@ void loop() {
   // If for some reason we get empty lines, ignore them.
   // One case is \r\n being parsed as two line endings.
   if (serialLine.length() == 0) {
-    LogLn("Got empty line from serial");
+    LogLn(F("Got empty line from serial"));
     return;
   }
 
@@ -223,19 +223,19 @@ void loop() {
 
   gkplus_datapoint dataPoint(serialLine);
   boolean dataPointValid = dataPoint.initialized;
-  Log("dataPoint valid? ");
+  Log(F("dataPoint valid? "));
   LogLn(dataPointValid);
 
   // write state to display
   if (dataPointValid) {
-    messageString = "Done.";
+    messageString = F("Done.");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
     dataString = dataPoint.toString();
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
   } else {
-    messageString = "Got bad data";
+    messageString = F("Got bad data");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-    dataString = "";
+    dataString = F("");
     display.writeLine(LinedDisplay::DATA_LINE, serialLine);
     return;
   }
@@ -244,10 +244,10 @@ void loop() {
   // Start/connect WiFi
   //
 
-  phaseString = "WiFi bring-up";
+  phaseString = F("WiFi bring-up");
   display.writeLine(LinedDisplay::PHASE_LINE, phaseString);
   LogLn(phaseString);
-  messageString = "Starting...";
+  messageString = F("Starting...");
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
 
   WiFi.mode(WIFI_STA);
@@ -256,21 +256,21 @@ void loop() {
   const int WIFI_WAIT_PERIOD = 500; // ms
   int waitIdx = 0;
   while (WiFi.status() != WL_CONNECTED && waitIdx < WIFI_WAIT_COUNT) {
-    dataString = "WiFi wait count: ";
+    dataString = F("WiFi wait count: ");
     waitIdx += 1;
     dataString += String(waitIdx/2);
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
     delay(WIFI_WAIT_PERIOD);
   }
   if (WiFi.status() != WL_CONNECTED) {
-    dataString = "WiFi conn. failed: ";
+    dataString = F("WiFi conn. failed: ");
     dataString += WiFi.status();
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
     Log(dataString);
     WiFi.mode(WIFI_OFF);
     return;
   }
-  messageString = "WiFi connected.";
+  messageString = F("WiFi connected.");
   LogLn(messageString);
   digitalWrite(GRN_LED, HIGH);
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
@@ -281,12 +281,12 @@ void loop() {
 
   // Time needs to be approximately correct for the sample to work.
   // This is copy-pasted from sample_init.cpp in the Azure SDK and tweaked a little.
-  phaseString = "Syncing Time";
+  phaseString = F("Syncing Time");
   LogLn(phaseString);
   display.writeLine(LinedDisplay::PHASE_LINE, phaseString);
-  messageString = "Waiting for NTP sync...";
+  messageString = F("Waiting for NTP sync...");
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-  dataString = "";
+  dataString = F("");
   display.writeLine(LinedDisplay::DATA_LINE, dataString);
   {
    time_t epochTime;
@@ -298,10 +298,10 @@ void loop() {
        epochTime = time(NULL);
 
        if (epochTime < MIN_EPOCH) {
-           LogLn("Fetching NTP epoch time failed! Waiting 2 seconds to retry.");
+           LogLn(F("Fetching NTP epoch time failed! Waiting 2 seconds to retry."));
            delay(2000);
        } else {
-           Log("Fetched NTP epoch time is: ");
+           Log(F("Fetched NTP epoch time is: "));
            LogLn(epochTime);
            break;
        }
@@ -324,7 +324,7 @@ void loop() {
   gmtime_r(&now, &utcNow);
 
   String nmeaSentence;
-  nmeaSentence += "$GPZDA,";
+  nmeaSentence += F("$GPZDA,");
   char timeBuf[83]; // NMEA max is 82 chars incl. start and checksum markers
   timeBuf[83-1] = '\0x00'; // paranoid enforced null termination
   strftime(timeBuf, 82, "%H:%M:%S,%d,%m,%Y,", &utcNow);
@@ -335,15 +335,15 @@ void loop() {
     timezoneHourOffset += 1;
   }
   nmeaSentence += timezoneHourOffset;
-  nmeaSentence += ",";
+  nmeaSentence += F(",");
   nmeaSentence += timezoneMinuteOffset;
   uint8_t checksum = 0;
   for (int idx = 1; idx < nmeaSentence.length(); idx++) {
     checksum ^= nmeaSentence[idx];
   }
-  nmeaSentence += "*";
+  nmeaSentence += F("*");
   nmeaSentence += String(checksum, HEX);
-  nmeaSentence += "\r\n";
+  nmeaSentence += F("\r\n");
   Serial.print(nmeaSentence);
   GpsSerial.print(nmeaSentence);
 #endif // SEND_TIME_VIA_FAUX_GPS
@@ -353,12 +353,12 @@ void loop() {
   //
 
   // Construct message, connect to IoT Hub, send message
-  phaseString = "Azure IoT Hub";
+  phaseString = F("Azure IoT Hub");
   LogLn(phaseString);
   display.writeLine(LinedDisplay::PHASE_LINE, phaseString);
-  messageString = "Creating client";
+  messageString = F("Creating client");
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-  dataString = "";
+  dataString = F("");
   display.writeLine(LinedDisplay::DATA_LINE, dataString);
 
   IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
@@ -366,14 +366,14 @@ void loop() {
   device_ll_handle = IoTHubDeviceClient_LL_CreateFromConnectionString(AIH_CONN_STRING, protocol);
 
   if (device_ll_handle == NULL) {
-    messageString = "Create failed.";
+    messageString = F("Create failed.");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
     WiFi.mode(WIFI_OFF);
     digitalWrite(GRN_LED, LOW);
     return;
   }
 
-  LogLn("Starting IoT Hub transaction");
+  LogLn(F("Starting IoT Hub transaction"));
   // Setting the Trusted Certificate.
   IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
 
@@ -390,20 +390,20 @@ void loop() {
   //connectionStatusBlock.complete = false;
   //IOTHUB_CLIENT_RESULT clientSetCbRet = IoTHubDeviceClient_LL_SetConnectionStatusCallback(device_ll_handle, connection_status_callback, &connectionStatusBlock);
   //if (clientSetCbRet != IOTHUB_CLIENT_OK) {
-  //  Log("set cb ret: ");
+  //  Log(F("set cb ret: "));
   //  LogLn(IOTHUB_CLIENT_RESULTStrings(clientSetCbRet));
   //}
   //while (!connectionStatusBlock.complete) {
-  //  LogLn("Waiting for IoTHub connection to complete");
+  //  LogLn(F("Waiting for IoTHub connection to complete"));
   //  delay(200);
   //}
   //if (connectionStatusBlock.complete && connectionStatusBlock.status != IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
-  //  hubStatusString = "AIoTH: connect failed";
+  //  hubStatusString = F("AIoTH: connect failed");
   //  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
   //  LogLn(hubStatusString);
-  //  Log("  ");
+  //  Log(F("  "));
   //  LogLn(IOTHUB_CLIENT_CONNECTION_STATUSStrings(connectionStatusBlock.status));
-  //  Log("  ");
+  //  Log(F("  "));
   //  LogLn(IOTHUB_CLIENT_CONNECTION_STATUS_REASONStrings(connectionStatusBlock.reason));
   //  WiFi.mode(WIFI_OFF);
   //  return;
@@ -411,14 +411,14 @@ void loop() {
   // really, really poor person's event system: reset event
   //connectionStatusBlock.complete = false;
 
-  messageString = "Creating message";
+  messageString = F("Creating message");
   LogLn(messageString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
 
   String hubMessage = dataPoint.toString();
   IOTHUB_MESSAGE_HANDLE message_handle = IoTHubMessage_CreateFromString(hubMessage.c_str());
   if (message_handle == NULL) {
-    messageString = "Create failed.";
+    messageString = F("Create failed.");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
     IoTHubDeviceClient_LL_Destroy(device_ll_handle);
     WiFi.mode(WIFI_OFF);
@@ -426,7 +426,7 @@ void loop() {
     return;
   }
 
-  messageString = "Sending message";
+  messageString = F("Sending message");
   LogLn(messageString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
 
@@ -435,7 +435,7 @@ void loop() {
   int result = IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, &sb);
   IoTHubMessage_Destroy(message_handle); // per sample, this has been copied and can be destroyed
   if (result != IOTHUB_CLIENT_OK) {
-    messageString = "Send failed.";
+    messageString = F("Send failed.");
     display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
     dataString = String(result, HEX);
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
@@ -451,22 +451,22 @@ void loop() {
   //const int MSG_WAIT_COUNT = 20;
   const int MSG_WAIT_DELAY = 500; // ms
   int msgWaitIdx = 0;
-  messageString = "Waiting for send...";
+  messageString = F("Waiting for send...");
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
   while (!sb.complete) {
     msgWaitIdx += 1;
-    dataString = "Wait count: ";
+    dataString = F("Wait count: ");
     dataString += msgWaitIdx;
     display.writeLine(LinedDisplay::DATA_LINE, dataString);
     delay(MSG_WAIT_DELAY);
   }
-  Log("Got IoT Hub callback, ");
+  Log(F("Got IoT Hub callback, "));
   LogLn(IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(sb.result));
 
   if (sb.result == 0) {
-    messageString = "Message sent";
+    messageString = F("Message sent");
   } else {
-    messageString = "Send failed";
+    messageString = F("Send failed");
   }
   LogLn(messageString);
   display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
@@ -478,6 +478,6 @@ void loop() {
   // Cleanup
   IoTHubDeviceClient_LL_Destroy(device_ll_handle);
   WiFi.mode(WIFI_OFF);
-  LogLn("End of complete loop()");
+  LogLn(F("End of complete loop()"));
   digitalWrite(GRN_LED, LOW);
 }
