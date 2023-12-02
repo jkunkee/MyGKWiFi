@@ -1,7 +1,7 @@
 
 Some aspects of this code are derived from the MIT-licensed Azure IoT Hub example.
 
-Some aspects of this code are derived from the DIYGeiger GKWiFi source v2.0 which is licnesed under the Creative Commons NonCommercial-ShareAlike 4.0.
+Some aspects of this code are derived from the DIYGeiger GKWiFi source v2.0 which is licnesed under the Creative Commons NonCommercial-ShareAlike 4.0 license.
 
 I started from a clean project and only pulled in snippets from these two projects. The DIYGeiger parts have been every thoroughly reworked, and the Azure IoT Hub parts have been mildly reworked. The only DIYGeiger snippet I know of that is even recognizable anymore is the table originally in globals.h labelled "PIN MAP for ESP8266" and even that has been tweaked pretty heavily.
 
