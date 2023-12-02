@@ -14,10 +14,6 @@
 #endif // SEND_TIME_VIA_FAUX_GPS
 #include "LinedDisplay.h"
 
-#include <AzureIoTHub.h>
-#include "AzureIoTProtocol_HTTP.h"
-#include "iothubtransporthttp.h"
-
 // sample_init bits from Azure SDK
 // Times before ~2010 (1970 + 40 years) are invalid
 #include <time.h>
@@ -44,45 +40,6 @@
 // WAKE                16               // wired to RESET through cap to wake from sleep
 
 LinedDisplay display(SDA_PIN, SCL_PIN);
-
-/* -- send_confirm_callback --
- * Callback method which executes upon confirmation that a message originating from this device has been received by the IoT Hub in the cloud.
- */
-typedef struct _iothub_callback_status_block {
-  boolean complete;
-  IOTHUB_CLIENT_CONFIRMATION_RESULT result;
-} iothub_callback_status_block;
-static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* userContextCallback)
-{
-  iothub_callback_status_block *sb = (iothub_callback_status_block*)userContextCallback;
-  sb->result = result;
-  sb->complete = true;
-}
-
-//typedef struct _iothub_conn_callback_status_block {
-//  boolean complete;
-//  IOTHUB_CLIENT_CONNECTION_STATUS status;
-//  IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason;
-//} iothub_conn_callback_status_block;
-///* -- connection_status_callback --
-// * Callback method which executes on receipt of a connection status message from the IoT Hub in the cloud.
-// */
-//static void connection_status_callback(IOTHUB_CLIENT_CONNECTION_STATUS result, IOTHUB_CLIENT_CONNECTION_STATUS_REASON reason, void* user_context)
-//{
-//  iothub_conn_callback_status_block *sb = (iothub_conn_callback_status_block*)user_context;
-//  sb->status = result;
-//  sb->reason = reason;
-//  // This sample DOES NOT take into consideration network outages.
-//  if (result == IOTHUB_CLIENT_CONNECTION_AUTHENTICATED)
-//  {
-//    Log("The device client is connected to iothub\r\n");
-//  }
-//  else
-//  {
-//    Log("The device client has been disconnected\r\n");
-//  }
-//  sb->complete = true;
-//}
 
 // Time globals
 // Pacific Standard Time (Seattle)
@@ -118,7 +75,6 @@ void setup() {
 #endif // MYGKWIFI_DEBUG
 
   WiFi.mode(WIFI_OFF);
-  IoTHub_Init();
 
 #ifdef SEND_TIME_VIA_FAUX_GPS
   // Set up time
@@ -361,122 +317,11 @@ void loop() {
   dataString = F("");
   display.writeLine(LinedDisplay::DATA_LINE, dataString);
 
-  IOTHUB_DEVICE_CLIENT_LL_HANDLE device_ll_handle;
-  const IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol = HTTP_Protocol; // HTTP_Protocol, MQTT_Protocol
-  device_ll_handle = IoTHubDeviceClient_LL_CreateFromConnectionString(AIH_CONN_STRING, protocol);
-
-  if (device_ll_handle == NULL) {
-    messageString = F("Create failed.");
-    display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-    WiFi.mode(WIFI_OFF);
-    digitalWrite(GRN_LED, LOW);
-    return;
-  }
-
-  LogLn(F("Starting IoT Hub transaction"));
-  // Setting the Trusted Certificate.
-  IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_TRUSTED_CERT, certificates);
-
-  // Example sdk status tracing for troubleshooting
-  // This is MQTT-only per https://docs.microsoft.com/en-us/azure/iot-hub/iot-c-sdk-ref/iothub-device-client-ll-h/iothubdeviceclient-ll-setoption
-  //bool traceOn = true;
-  //IoTHubDeviceClient_LL_SetOption(device_ll_handle, OPTION_LOG_TRACE, &traceOn);
-
-  // Setting connection status callback to get indication of connection to iothub
-  // Without multithreading and an easy-to-write state machine, monitoring the connection
-  // status is not easy enough to do here. Instead only rely on it being stable for one
-  // message.
-  //iothub_conn_callback_status_block connectionStatusBlock;
-  //connectionStatusBlock.complete = false;
-  //IOTHUB_CLIENT_RESULT clientSetCbRet = IoTHubDeviceClient_LL_SetConnectionStatusCallback(device_ll_handle, connection_status_callback, &connectionStatusBlock);
-  //if (clientSetCbRet != IOTHUB_CLIENT_OK) {
-  //  Log(F("set cb ret: "));
-  //  LogLn(IOTHUB_CLIENT_RESULTStrings(clientSetCbRet));
-  //}
-  //while (!connectionStatusBlock.complete) {
-  //  LogLn(F("Waiting for IoTHub connection to complete"));
-  //  delay(200);
-  //}
-  //if (connectionStatusBlock.complete && connectionStatusBlock.status != IOTHUB_CLIENT_CONNECTION_AUTHENTICATED) {
-  //  hubStatusString = F("AIoTH: connect failed");
-  //  display.writeLine(LinedDisplay::MESSAGE_LINE, hubStatusString);
-  //  LogLn(hubStatusString);
-  //  Log(F("  "));
-  //  LogLn(IOTHUB_CLIENT_CONNECTION_STATUSStrings(connectionStatusBlock.status));
-  //  Log(F("  "));
-  //  LogLn(IOTHUB_CLIENT_CONNECTION_STATUS_REASONStrings(connectionStatusBlock.reason));
-  //  WiFi.mode(WIFI_OFF);
-  //  return;
-  //}
-  // really, really poor person's event system: reset event
-  //connectionStatusBlock.complete = false;
-
-  messageString = F("Creating message");
-  LogLn(messageString);
-  display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-
-  String hubMessage = dataPoint.toString();
-  IOTHUB_MESSAGE_HANDLE message_handle = IoTHubMessage_CreateFromString(hubMessage.c_str());
-  if (message_handle == NULL) {
-    messageString = F("Create failed.");
-    display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-    IoTHubDeviceClient_LL_Destroy(device_ll_handle);
-    WiFi.mode(WIFI_OFF);
-    digitalWrite(GRN_LED, LOW);
-    return;
-  }
-
-  messageString = F("Sending message");
-  LogLn(messageString);
-  display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-
-  iothub_callback_status_block sb;
-  sb.complete = false;
-  int result = IoTHubDeviceClient_LL_SendEventAsync(device_ll_handle, message_handle, send_confirm_callback, &sb);
-  IoTHubMessage_Destroy(message_handle); // per sample, this has been copied and can be destroyed
-  if (result != IOTHUB_CLIENT_OK) {
-    messageString = F("Send failed.");
-    display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-    dataString = String(result, HEX);
-    display.writeLine(LinedDisplay::DATA_LINE, dataString);
-    IoTHubDeviceClient_LL_Destroy(device_ll_handle);
-    WiFi.mode(WIFI_OFF);
-    digitalWrite(GRN_LED, LOW);
-    return;
-  }
-
-  IoTHubDeviceClient_LL_DoWork(device_ll_handle);
-
-  // wait for message send completion callback
-  //const int MSG_WAIT_COUNT = 20;
-  const int MSG_WAIT_DELAY = 500; // ms
-  int msgWaitIdx = 0;
-  messageString = F("Waiting for send...");
-  display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-  while (!sb.complete) {
-    msgWaitIdx += 1;
-    dataString = F("Wait count: ");
-    dataString += msgWaitIdx;
-    display.writeLine(LinedDisplay::DATA_LINE, dataString);
-    delay(MSG_WAIT_DELAY);
-  }
-  Log(F("Got IoT Hub callback, "));
-  LogLn(IOTHUB_CLIENT_CONFIRMATION_RESULTStrings(sb.result));
-
-  if (sb.result == 0) {
-    messageString = F("Message sent");
-  } else {
-    messageString = F("Send failed");
-  }
-  LogLn(messageString);
-  display.writeLine(LinedDisplay::MESSAGE_LINE, messageString);
-
   //
   // Celebrate a job well done.
   //
 
   // Cleanup
-  IoTHubDeviceClient_LL_Destroy(device_ll_handle);
   WiFi.mode(WIFI_OFF);
   LogLn(F("End of complete loop()"));
   digitalWrite(GRN_LED, LOW);
