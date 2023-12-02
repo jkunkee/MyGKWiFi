@@ -1,9 +1,12 @@
 
 #pragma once
 
-#include "SSD1306.h"                    // OLED display library - Latest Git commit for clockspeed fixes
-//                                        https://github.com/squix78/esp8266-oled-ssd1306
-#include "OLEDDisplayFonts.h"             // additional fonts in separate file in lib
+// ESP8266 and ESP32 Oled Driver for SSD1306 display
+// https://github.com/squix78/esp8266-oled-ssd1306
+// 4.1.0 had some clockspeed issues. The fixes should have been picked up in newer releases.
+#include "SSD1306.h"
+// Fonts are provided in a separate file. This can be customized; see GitHub README page.
+#include "OLEDDisplayFonts.h"
 
 class LinedDisplay {
 
