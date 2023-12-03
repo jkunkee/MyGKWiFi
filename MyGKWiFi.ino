@@ -1,4 +1,12 @@
 
+// MyGKWiFi: a custom GK WiFi firmware
+// License: see LICENSE.md
+// What does it do: see README.md
+
+//
+// Config and Includes
+//
+
 //#define MYGKWIFI_DEBUG
 
 // Unless and until there are some major RAM savings somewhere, this is being cut.
@@ -14,7 +22,9 @@
 #endif // SEND_TIME_VIA_FAUX_GPS
 #include "LinedDisplay.h"
 
-// sample_init bits from Azure SDK
+// NTP synchronization is handled asynchronously, so the Azure SDK just checks whether
+// or not the time has been updated to something relatively recent to tell if the sync
+// has worked.
 // Times before ~2010 (1970 + 40 years) are invalid
 #include <time.h>
 #define MIN_EPOCH (40 * 365 * 24 * 3600)
@@ -39,6 +49,10 @@
 // RUN / PGM           15               // pulled low on carrier board
 // WAKE                16               // wired to RESET through cap to wake from sleep
 
+//
+// Globals
+//
+
 LinedDisplay display(SDA_PIN, SCL_PIN);
 
 // Time globals
@@ -47,6 +61,10 @@ LinedDisplay display(SDA_PIN, SCL_PIN);
 const char *tzValue = "PST+8PDT,M3.2.0/2,M11.1.0/2";
 SoftwareSerial GpsSerial;
 #endif // SEND_TIME_VIA_FAUX_GPS
+
+//
+// Setup
+//
 
 void setup() {
   // GK-WiFi_v2_0 setup
@@ -87,6 +105,10 @@ void setup() {
 
   digitalWrite(RED_LED, LOW);
 }
+
+//
+// Loop
+//
 
 void loop() {
   static String serialBuffer("");
