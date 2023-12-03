@@ -1,29 +1,42 @@
 
-GK WiFi Azure+LiFePO4wered software
+GK WiFi MQTT+LiFePO4wered software
 ===
 
-As described in LICENSE.md, this Arduino program for the DIYGeiger GK WiFi and GK Plus kits takes some inspiration from the provided DIYGeiger software and the Azure IoT Hub sample to push data from the GK Plus to an Azure IoT Hub. It also governs power for the system through the LiFePO4wered/Pi+ battery management system.
+This Arduino-style firmware for the DIYGeiger GK WiFi kit (attached to the GK Plus kit) takes some inspiration from the provided GK WiFi base software, Azure IoT Hub's sample code, LiFePO4wered docs and samples, and my own past work on AirQualSniff to provide:
+
+* Status information via an I2C-attached OLED screen
+    * Most recent reading
+    * Current time
+    * Boot, network connection, and telemetry status
+    * Battery status
+* GK Plus data ingestion via hardware UART
+* Current time NMEA sentences out over software UART (the GK Plus can accept GPS NMEA sentences)
+* LiFePO4wered battery management system configuration, control, and status
+* Network-based logging of data
+    * mDNS client (finding telemetry server)
+    * NTP client (setting GK Plus time)
+    * MQTT client (sending data)
+* Data reported
+    * Geiger counter readings
+    * Battery status
+    * Uptime
+
+The front panel of my Geiger counter does not expose any inputs on the GK WiFi unless you count the power button connected to the LiFePO4wered BMS, so it aims to be fully self-contained.
 
 Dependency LKG versions
 ===
 
-* Arduino IDE: LKG is 1.18.13
+* Arduino IDE: LKG is 1.18.13 (but newer will probably be fine)
 * OLED library: https://github.com/ThingPulse/esp8266-oled-ssd1306.git c1fa10ea5e3700cfde1d032fa20b468bc43c997c
-* Azure libs:
-  * https://github.com/Azure/azure-iot-arduino
-  * AzureIoTHub
-  * AzureIoTUtility
-  * AzureIoTProtocol_MQTT
-  * AzureIoTProtocol_HTTP
-  * all ^^^ 1.3.9
-* ESP BSP: 2.7.4 tweaked per azure-iot-arduino instructions
-  * Note that Windows Store puts the ESP8266 BSP at
-  * %HomePath%\Documents\ArduinoData\packages\esp8266\hardware\esp8266\2.7.4\cores\esp8266\Arduino.h
-  * Note that you don't want platform.local.txt from the Azure ESP8266 sample because it's full of old cruft. All you want is
-  * `build.extra_flags=-DDONT_USE_UPLOADTOBLOB -DUSE_BALTIMORE_CERT -DESP8266`
+    * "ESP8266 and ESP32 Oled Driver for SSD1306 display" in Library Manager
+    * Must be newer than 4.1.0
 
 Board configuration
 ===
+
+The GK WiFi kit is an ESP8266 on a carrier board soldered to an application-specific carrier board.
+
+Board Manager URI: http://arduino.esp8266.com/stable/package_esp8266com_index.json
 
 * "Tools" menu in Arduino IDE
 * Board: "Generic ESP8266 Module"
