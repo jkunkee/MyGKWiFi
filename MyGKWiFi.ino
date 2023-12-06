@@ -58,6 +58,9 @@ LinedDisplay display(SDA_PIN, SCL_PIN);
 // Time globals
 // Pacific Standard Time (Seattle)
 #ifdef SEND_TIME_VIA_FAUX_GPS
+// identifier PST is UTC offset +8
+// DST identifier PDT starts in March during week 2, day 0, at 2am November during week 1, day 0 at 1am
+// This string format is a POSIX standard; see `man tzset` for details.
 const char *tzValue = "PST+8PDT,M3.2.0/2,M11.1.0/2";
 SoftwareSerial GpsSerial;
 #endif // SEND_TIME_VIA_FAUX_GPS
